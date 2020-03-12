@@ -1,0 +1,15 @@
+#!/usr/bin/bash
+echo Enter the name of DataBase
+read DBname
+	mkdir ./$DBname 2>./error
+  if [ $? == 0 ]
+  then
+    echo "Database Created Successfully"
+  else
+    echo "Error in Creating Database $DBname"
+fi
+
+
+
+
+
