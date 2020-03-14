@@ -1,0 +1,10 @@
+#!/bin/bash
+  echo -e "Enter Table Name: "
+  read tName
+  rm $tName metadata$tName 2>>./.error.log
+  if [[ $? == 0 ]]
+  then
+    echo "Table Dropped Successfully"
+  else
+    echo "Error Dropping Table $tName"
+fi

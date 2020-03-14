@@ -1,0 +1,32 @@
+#!/bin/bash
+echo Enter the name of table you want to insert into
+read tablename
+numofcolums=$(sed -n '4p' metadata$tablename)
+row=""
+sep="|"
+i=0
+t=6
+while [ $i -lt $numofcolums ]
+do
+var=$( sed -n  ''$t'p' "metadata$tablename" | cut -d : -f 1 )
+echo "Enter the $var"
+read input
+if [ $i == $(($numofcolums-1)) ]; then
+row=$row$input
+else
+row=$row$input$sep
+fi
+((t= t + 1 ))
+((i= i + 1 ))
+
+done
+echo -e $row"\c" >> $tablename
+if [ $? == 0 ]
+then
+echo "Data Inserted Successfully"
+else
+echo "Error Inserting Data into Table $tablename"
+fi
+
+
+
