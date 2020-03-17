@@ -4,17 +4,33 @@ read tablename
 numofcolums=$(sed -n '4p' metadata$tablename)
 row=""
 sep="|"
+newLine="\n"
 i=0
 t=6
 while [ $i -lt $numofcolums ]
 do
-var=$( sed -n  ''$t'p' "metadata$tablename" | cut -d : -f 1 )
-echo "Enter the $var"
-read input
+colName=$( sed -n  ''$t'p' "metadata$tablename" | cut -d : -f 1 )
+colType=$( sed -n  ''$t'p' "metadata$tablename" | cut -d : -f 2 )
+echo "Enter the $colName"
+read data
+if [ $colType == "int" ]; then
+while ! [[ "$data" =~ ^[0-9]+$ ]]; do
+echo -e "invalid DataType !!"
+echo -e "$colName ($colType) = \c"
+read data
+done
+fi
+if [ $colType == "text" ]; then
+while  [[ "$data" =~ ^[0-9]+$ ]]; do
+echo -e "invalid DataType !!"
+echo -e "$colName ($colType) = \c"
+read data
+done
+fi
 if [ $i == $(($numofcolums-1)) ]; then
-row=$row$input
+row=$row$data$newLine
 else
-row=$row$input$sep
+row=$row$data$sep
 fi
 ((t= t + 1 ))
 ((i= i + 1 ))

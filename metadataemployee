@@ -1,0 +1,9 @@
+tablename
+employee
+numberofcolums
+3
+nameofcolums
+id:int
+name:text
+salary:int
+
