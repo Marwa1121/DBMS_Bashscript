@@ -9,8 +9,8 @@ i=0
 t=6
 while [ $i -lt $numofcolums ]
 do
-colName=$( sed -n  ''$t'p' "metadata$tablename" | cut -d : -f 1 )
-colType=$( sed -n  ''$t'p' "metadata$tablename" | cut -d : -f 2 )
+colName=$( sed -n  ''$t'p' "metadata$tablename" | cut -d '|' -f 1 )
+colType=$( sed -n  ''$t'p' "metadata$tablename" | cut -d '|' -f 2 )
 echo "Enter the $colName"
 read data
 if [ $colType == "int" ]; then

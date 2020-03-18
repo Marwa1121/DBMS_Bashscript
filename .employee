@@ -1,0 +1,12 @@
+
+id|int|PK
+name|str|
+
+id|int|PK
+name|str|
+
+id|int|PK
+name|str|
+field|type|key
+id|int|PK
+name|str|
