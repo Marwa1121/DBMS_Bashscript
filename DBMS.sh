@@ -1,4 +1,28 @@
 #!/bin/bash
+ createdatabase(){
+echo -e "Enter Database Name: \c"
+  read dbName
+  mkdir -p ./DBMS/$dbName
+  if [[ $? == 0 ]]
+  then
+    echo "Database Created Successfully"
+  else
+    echo "Error Creating Database $dbName"
+  fi
+ mainscript
+ 
+}
+
+ listdatabases()
+{
+echo -e "The existing databases are :"
+
+ls ./DBMS; 
+
+mainscript
+
+}
+
 dropdatabase()
 {
 echo -e " Enter database name : \c "
@@ -9,65 +33,222 @@ if [ $? == 0 ]; then
 else
  echo "database is not found"
 fi
-bash DBMS.sh
+mainscript
 }
-selectall()
-{
-echo -e "enter the table name: \c"
-read tname
-column -t -s '|' $tname 2 >>./.error.log
-if [ $? != 0 ];
-then 
-echo " no such file exist"
+
+createtable(){
+echo -e "Table name: \c "
+read tablename
+echo -e "Enter number of columns : \c"
+read colnum
+
+counter=1
+sep="|"
+rsep="\n"
+pkey=""
+metadata="Table name"$rsep$tablename$rsep"number of colums"$rsep$colnum$rsep
+metadata+="field"$sep"type"$sep"key"
+
+ while [ $counter -le $colnum ]
+  do
+    echo -e "Column No.$counter is: \c"
+    read colname
+
+    echo -e "Type of Column $colname is: "
+    select var in "int" "str"
+    do
+      case $var in
+        int ) coltype="int";break;;
+        str ) coltype="str";break;;
+        * ) echo "Wrong Choice" ;;
+      esac
+done
+
+
+if [[ $pkey == "" ]]; then
+      echo -e "Make PrimaryKey ? "
+      select var in "yes" "no"
+      do
+        case $var in
+          yes ) pkey="PK";
+          metadata+=$rsep$colname$sep$coltype$sep$pkey;
+          break;;
+          no )
+          metadata+=$rsep$colname$sep$coltype$sep""
+          break;;
+          * ) echo "Wrong Choice" ;;
+        esac
+      done
+    else
+      metadata+=$rsep$colname$sep$coltype$sep""
+    fi
+    if [[ $counter == $colnum ]]; then
+      temp=$temp$colname
+    else	
+      temp=$temp$colname$sep
+    fi
+    ((counter++))
+  done
+  touch  metadata$tablename
+  echo -e $metadata  >> metadata$tablename
+  touch $tablename
+  echo -e $temp >> $tablename
+  if [[ $? == 0 ]]
+  then
+    echo "Table Created Successfully"
+    tablemenu
+  else
+    echo "Error Creating Table $tablename"
+    tablemenu
+  fi
+}
+
+
+
+
+listtables(){
+
+ls .;
+tablemenu
+}
+
+selectall(){
+echo -e "Enter Table Name: \c"
+  read tName
+  column -t -s '|' $tName 2>>./.error.log
+  if [[ $? != 0 ]]
+  then
+    echo "Error Displaying Table $tName"
+  fi
+selectfromtable
+}
+
+
+
+droptable(){
+ echo -e "Enter Table Name: "
+  read tName
+  rm $tName metadata$tName 2>>./.error.log
+  if [[ $? == 0 ]]
+  then
+    echo "Table Dropped Successfully"
+  else
+    echo "Error Dropping Table $tName"
 fi
+mainscript
 }
 
 
+
+selectcol() {
+ echo -e "Enter Table Name: \c"
+  read tName
+  echo -e "Enter Column Number: \c"
+  read colNum
+  awk 'BEGIN{FS="|"}{print $'$colNum'}' $tName
+ 
+}
 
 selectfromtable()
 {
-select choice in selectall selectwithcondition
+select choice in select_all select_column Exit
 do
 case $choice in 
-selectall)
+select_all)
 selectall
 ;;
-selectwithcondition)
-selectwithcondition
+select_column)
+selectcol
+;;
+Exit)
+tablemenu
 ;;
 *)
 echo "wrong choice"
+selectfromtable
 ;;
 esac
 done
+selectfromtable
 }
 
-dropfromtable (){
-echo -e "enter the table name : \c "
-read tname
-echo -e "enter value :\c "
-read field
-fid= $(awk 'BEGIN {FS ="|"} {if (NR ==1) {for(i=1;i<NF;i++) {if $i == "'$field'" print i }}}', $tname)
-if [ fid == " " ];
-then
-echo "not found"
-tablemenu
-else
-echo -e "enter the value "
-read val
-res=$(awk 'BEGIN{FS="|"}{if ($'$fid'=="'$val'") print $'$fid'}' $tname  2>> ./.error.log)
+dropfromtable(){
 
-if [ res == "" ];
-then
-echo "value not found"
-tablemenu
+ echo -e "Enter Table Name: \c"
+  read tName
+  echo -e "Enter Condition Column name: \c"
+  read field
+  fid=$(awk 'BEGIN{FS="|"}{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$field'") print i}}}' $tName)
+  if [[ $fid == "" ]]
+  then
+    echo "Not Found"
+    tablemenu
+  else
+    echo -e "Enter Condition Value: \c"
+    read val
+    res=$(awk 'BEGIN{FS="|"}{if ($'$fid'=="'$val'") print $'$fid'}' $tName 2>>./.error.log)
+    if [[ $res == "" ]]
+    then
+      echo "Value Not Found"
+      tablemenu
+    else
+      NR=$(awk 'BEGIN{FS="|"}{if ($'$fid'=="'$val'") print NR}' $tName 2>>./.error.log)
+      sed -i ''$NR'd' $tName 2>>./.error.log
+      echo "Row Deleted Successfully"
+      tablemenu
+    fi
+  fi
+
+}
+
+insertintotable(){
+echo Enter the name of table you want to insert into
+read tablename
+numofcolums=$(sed -n '4p' metadata$tablename)
+row=""
+sep="|"
+newLine="\n"
+i=0
+t=6
+while [ $i -lt $numofcolums ]
+do
+colName=$( sed -n  ''$t'p' "metadata$tablename" | cut -d '|' -f 1 )
+colType=$( sed -n  ''$t'p' "metadata$tablename" | cut -d '|' -f 2 )
+echo "Enter the $colName"
+read data
+if [ $colType == "int" ]; then
+while ! [[ "$data" =~ ^[0-9]+$ ]]; do
+echo -e "invalid DataType !!"
+echo -e "$colName ($colType) = \c"
+read data
+done
+fi
+if [ $colType == "text" ]; then
+while  [[ "$data" =~ ^[0-9]+$ ]]; do
+echo -e "invalid DataType !!"
+echo -e "$colName ($colType) = \c"
+read data
+done
+fi
+if [ $i == $(($numofcolums-1)) ]; then
+row=$row$data$newLine
 else
-NR = $(awk 'BEGIN{FS= "|"}{if($'$fid'=="'$val'") print NR}' $tname 2 >> ./.error.log)
-sed -i '$NRd' $tname 2>> ./.error.log
-echo "row deleted successfully"
+row=$row$data$sep
+fi
+((t= t + 1 ))
+((i= i + 1 ))
+
+done
+echo -e $row"\c" >> $tablename
+if [ $? == 0 ]
+then
+echo "Data Inserted Successfully"
+else
+echo "Error Inserting Data into Table $tablename"
+fi
+
 tablemenu
-fi
-fi
+ 
 }
 
       
@@ -78,28 +259,31 @@ do
 case $choice in
 
 CreateTable)
- echo "1"
+ createtable
 ;;
 ListTables)
- echo "2"
+ listtables
 ;;
 InsertIntoTable)
- echo "3"
+ insertintotable
 ;;
-SelectFromTable)
+Selectfromtable)
 selectfromtable
 ;;
-DropFromTable)
-exit
-;;
+
 DropTable)
-echo "Droptable"
+droptable
+;;
+
+DropFromTable)
+dropfromtable
 ;;
 Exit)
-exit
+mainscript
 ;;
 *)
 echo "wrong choice"
+tablemenu
 esac
 done
 }
@@ -111,24 +295,26 @@ read dbname
 cd  ./DBMS/$dbname 2>>./.error.log
  if [ $? == 0 ]; then
 echo "DataBase $dbname is successfully connected"
-tablemenue
+tablemenu
 
 else
 echo "DataBase $dbname is not exist"
- bash DBMS.sh
+ mainscript
 
 fi
 }
 
+
+mainscript(){
 select choice in CreateDataBase ListDataBases ConnectToDataBase DropDataBase Exit
 do
 case $choice in
 
 CreateDataBase)
- echo "1"
+ createdatabase
 ;;
 ListDataBases)
- echo "2"
+ listdatabases
 ;;
 ConnectToDataBase)
  connectdb
@@ -141,6 +327,10 @@ exit
 ;;
 *)
 echo "wrong choice"
+bash DBMS.sh
 ;;
 esac
 done
+}
+
+mainscript
